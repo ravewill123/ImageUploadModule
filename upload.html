@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title></title>
+	<link rel="stylesheet" type="text/css" href="css/imgareaselect-default.css" />
+	<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css" />
+	<script type="text/javascript" src="js/vendor/jquery-1.11.2.min.js"></script>
+    <script type="text/javascript" src="js/vendor/ajaxupload.3.5.js"></script>
+	<script type="text/javascript" src="js/vendor/jquery.imgareaselect.pack.js"></script>
+	<script type="text/javascript" src="js/vendor/bootstrap.min.js"></script>
+	<style type="text/css">
+		html, body {
+			background: #DFDFDF;
+			width:100%;
+			height:100%;
+			margin: 0;
+			padding: 0;
+			font-family: 'helvetica_condensed_blackRg',微軟正黑體,Microsoft JhengHei;
+		}
+		.container {
+			width:540px;
+            background: #DFDFDF;
+            padding: 15px;
+		}
+		.draw {
+			width:400px;
+			height:400px;
+			background: url(css/viewport_background.gif) #fff;
+			float: left;
+			margin-right: 10px;
+            overflow: hidden;
+		}
+		.button {
+			margin-bottom: 10px !important;
+			width:100px;
+		}
+        .msgModal {
+            width:300px;
+            margin: auto;
+        }
+	</style>
+	<script>
+		$(function(){
+            var server = "ImageUploadModule.php";
+
+
+            function getSearch(name) {
+                var results = new RegExp('[\\?&]' + name + '=([^&#]*)').exec(window.location.href);
+                if (!results) {
+                    return 0;
+                }
+                return results[1] || 0;
+            }
+            var min = 30;
+            var cutWidth = parseInt(getSearch('w'));
+            var cutHeight = parseInt(getSearch('h'));
+            var inputName = getSearch('n');
+            var call = getSearch('call');
+            var sourceWidth, sourceHeight, scale;
+            var sendData = {};
+            if(cutWidth == 0 || cutHeight == 0){
+                if(parent.closeUpload) parent.closeUpload();
+                msg('設置錯誤！');
+                return;
+            }
+            sendData.cutW = cutWidth;
+            sendData.cutH = cutHeight;
+			new AjaxUpload( $('#uploadBtn'), {
+				action: server,
+				name: 'picfile',
+				onSubmit: function(file, ext) {
+				  if (ext && /^(jpg|png|jpeg|gif)$/.test(ext)) {
+				    this.setData({
+				      'type': 'upload'
+				    });
+				  } else {
+                    msg('非圖片類型文件，請重傳');
+				    return false;
+				  }
+                  $('#uploadBtn').find('span:eq(1)').html('上傳中...');
+				  this.disable();
+				},
+				onComplete: function(file, response) {
+                    this.enable();
+                    var obj = $.parseJSON(response.substring(response.indexOf("{"), response.lastIndexOf("}") + 1));
+                    if(obj.code == 200){
+                        sendData.pic = obj.pic;
+                        $('#canvas').attr('src', obj.pic);
+                    }else{
+                        msg(obj.message);
+                    }
+                    $('#uploadBtn').find('span:eq(1)').html('上傳圖片');
+				}
+			});
+            $('#canvas').load(function() {
+                $(this).removeAttr('style');
+                sourceWidth = $(this).width();
+                sourceHeight = $(this).height();
+                if(sourceWidth/sourceHeight > 400/400){
+                    $(this).width(400);
+                    scale = 400 / sourceWidth;
+                }else{
+                    $(this).height(400);
+                    scale = 400 / sourceHeight;
+                }
+                var w = $(this).width();
+                var h = $(this).height();
+                $(this).css({'marginTop': (400-h)/2 , 'marginLeft': (400-w)/2 });
+                var setting = {x1:0, y1:0, x2:w, y2:h, w:0, h:0};
+                if(w/h > cutWidth/cutHeight){
+                    setting.h = h;
+                    setting.w = cutWidth/cutHeight*h;
+                }else{
+                    setting.w = w;
+                    setting.h = cutHeight/cutWidth*w;
+                }
+                setting.x1 = (w - setting.w)/2;
+                setting.x2 = setting.x1 + setting.w;
+                setting.y1 = (h - setting.h)/2;
+                setting.y2 = setting.y1 + setting.h;
+                $(this).imgAreaSelect({ x1: setting.x1, y1: setting.y1, x2: setting.x2, y2: setting.y2, aspectRatio: cutWidth+':'+cutHeight, handles: true, onSelectEnd: clipImgEvent, minWidth:min, minHeight:min });
+                clipImgEvent(null, $(this).data('imgAreaSelect').getSelection());
+                //msg('上傳完成，請於圖片上拖拉裁切範圍！');
+            });
+            function clipImgEvent(img, selection){
+                sendData.x1 = Math.round(selection.x1 / scale);
+                sendData.y1 = Math.round(selection.y1 / scale);
+                sendData.x2 = Math.round(selection.x2 / scale);
+                sendData.y2 = Math.round(selection.y2 / scale);
+                sendData.w = sendData.x2 - sendData.x1;
+                sendData.h = sendData.y2 - sendData.y1;
+                console.log(sendData);
+                if(selection.width > min && selection.height > min){
+                    $('#save').removeAttr('disabled');
+                }else{
+                    $('#save').attr('disabled','disabled');
+                }
+            }
+            
+            function msg(txt){
+                $('#msgModal').modal('show').find('.modal-body').text(txt);
+            }
+            $('#save').click(function(event) {
+                event.preventDefault();
+                if($(this).data('send')) return;
+                $(this).data('send', true);
+                sendData.type = "clip";
+                $.post(server, sendData, function(data, textStatus, xhr) {
+                    if(data.code == 200){
+                        if(call != 0){
+                            parent[call](data.pic, inputName);
+                        }else{
+                            parent["uploadCallback"](data.pic, inputName);
+                        }
+                    }else{
+                        msg(data.message);
+                    }
+                    $('#save').data('send', false);
+                }, 'json').fail(function() {
+                    msg('儲存裁切失敗！請再試一次！');
+                    $('#save').data('send', false);
+                });
+            }).data('send', false);
+		});
+
+        if (!window.console) console = {log: function() {}, info: function() {}, error: function() {}};
+	</script>
+</head>
+<body>
+	<div class="container">
+		
+		<div class="draw"><img id="canvas" style="display: none"></div>
+		<div class="row">
+			<button type="submit" class="btn btn-primary button" id="uploadBtn">
+				<span class="glyphicon glyphicon-open-file" aria-hidden="true"></span>
+				<span>上傳圖片</span>
+			</button>
+			<button type="submit" class="btn btn-primary button" id="save" disabled="disabled">
+				<span class="glyphicon glyphicon-floppy-disk" aria-hidden="true"></span>
+				<span>儲存裁切</span>
+			</button>
+		</div>
+		
+		<!--p>上傳圖片後，選擇適當範圍並按"儲存裁切"來完成上傳</p-->
+
+	</div>
+
+    <div id="msgModal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+      <div class="modal-dialog modal-sm">
+        <div class="modal-content msgModal">
+            <div class="modal-header">
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+              <p class="modal-title"><strong>Message</strong></p>
+            </div>
+            <div class="modal-body">
+            
+            </div>
+        </div>
+      </div>
+    </div>
+</body>
+</html>
