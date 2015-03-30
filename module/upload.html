@@ -44,8 +44,8 @@
 	</style>
 	<script>
 		$(function(){
-            var server = "ImageUploadModule.php";
-
+            var server = "upload.ashx"; // "ImageUploadModule.php"; API
+            var rootFolder = "../"; // 定義圖檔資料夾的相對路徑
 
             function getSearch(name) {
                 var results = new RegExp('[\\?&]' + name + '=([^&#]*)').exec(window.location.href);
@@ -57,8 +57,8 @@
             var min = 30;
             var cutWidth = parseInt(getSearch('w'));
             var cutHeight = parseInt(getSearch('h'));
-            var inputName = getSearch('n');
-            var call = getSearch('call');
+            var parameter = decodeURIComponent(getSearch('p'));
+            var call = getSearch('callback');
             var sourceWidth, sourceHeight, scale;
             var sendData = {};
             if(cutWidth == 0 || cutHeight == 0){
@@ -68,7 +68,8 @@
             }
             sendData.cutW = cutWidth;
             sendData.cutH = cutHeight;
-			new AjaxUpload( $('#uploadBtn'), {
+			var ajaxUpload = new AjaxUpload( $('#uploadBtn'), 
+            {
 				action: server,
 				name: 'picfile',
 				onSubmit: function(file, ext) {
@@ -88,7 +89,7 @@
                     var obj = $.parseJSON(response.substring(response.indexOf("{"), response.lastIndexOf("}") + 1));
                     if(obj.code == 200){
                         sendData.pic = obj.pic;
-                        $('#canvas').attr('src', obj.pic);
+                        $('#canvas').attr('src', rootFolder + obj.pic);
                     }else{
                         msg(obj.message);
                     }
@@ -123,17 +124,19 @@
                 setting.y2 = setting.y1 + setting.h;
                 $(this).imgAreaSelect({ x1: setting.x1, y1: setting.y1, x2: setting.x2, y2: setting.y2, aspectRatio: cutWidth+':'+cutHeight, handles: true, onSelectEnd: clipImgEvent, minWidth:min, minHeight:min });
                 clipImgEvent(null, $(this).data('imgAreaSelect').getSelection());
-                //msg('上傳完成，請於圖片上拖拉裁切範圍！');
             });
             function clipImgEvent(img, selection){
                 sendData.x1 = Math.round(selection.x1 / scale);
                 sendData.y1 = Math.round(selection.y1 / scale);
                 sendData.x2 = Math.round(selection.x2 / scale);
                 sendData.y2 = Math.round(selection.y2 / scale);
+                sendData.x1 = sendData.x1 < 0 ? 0 : sendData.x1 > sourceWidth ? sourceWidth : sendData.x1;
+                sendData.y1 = sendData.y1 < 0 ? 0 : sendData.y1 > sourceHeight ? sourceHeight : sendData.y1;
+                sendData.x2 = sendData.x2 < 0 ? 0 : sendData.x2 > sourceWidth ? sourceWidth : sendData.x2;
+                sendData.y2 = sendData.y2 < 0 ? 0 : sendData.y2 > sourceHeight ? sourceHeight : sendData.y2;
                 sendData.w = sendData.x2 - sendData.x1;
                 sendData.h = sendData.y2 - sendData.y1;
-                console.log(sendData);
-                if(selection.width > min && selection.height > min){
+                if(selection.width > min && selection.height > min && !$('#save').data('send')){
                     $('#save').removeAttr('disabled');
                 }else{
                     $('#save').attr('disabled','disabled');
@@ -147,18 +150,24 @@
                 event.preventDefault();
                 if($(this).data('send')) return;
                 $(this).data('send', true);
+                ajaxUpload.disable();
+                $('#save').attr('disabled','disabled');
+                $('#uploadBtn').attr('disabled','disabled');
                 sendData.type = "clip";
                 $.post(server, sendData, function(data, textStatus, xhr) {
                     if(data.code == 200){
                         if(call != 0){
-                            parent[call](data.pic, inputName);
+                            parent[call](data.pic, parameter);
                         }else{
-                            parent["uploadCallback"](data.pic, inputName);
+                            parent["uploadCallback"](data.pic, parameter);
                         }
                     }else{
                         msg(data.message);
+                        $('#save').data('send', false);
+                        $('#uploadBtn').removeAttr('disabled');
+                        ajaxUpload.enable();
+                        $('#save').removeAttr('disabled');
                     }
-                    $('#save').data('send', false);
                 }, 'json').fail(function() {
                     msg('儲存裁切失敗！請再試一次！');
                     $('#save').data('send', false);
