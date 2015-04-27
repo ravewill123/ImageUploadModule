@@ -100,12 +100,9 @@ try {
       // Create Crop Image 
       $crop = imagecreatetruecolor($cropW, $cropH);  
 
-
       if($img_type === "png"){
-        $background = imagecolorallocate($image_source, 0, 0, 0);
-        imagecolortransparent($image_source, $background);
-        imagealphablending($image_source, false);
-        imagesavealpha($image_source, true);
+        $bg = imagecolorallocate($crop, 255, 255, 255);
+        imagefill($crop, 0, 0, $bg);
       }
 
       imagecopy(  
@@ -118,8 +115,8 @@ try {
              $cropH
       ); 
 
-      $resize = imagecreatetruecolor($new_width , $new_height);  
-        
+      $resize = imagecreatetruecolor($new_width , $new_height);
+
       // Resize Image 
       imageCopyResampled(  
          $resize,   
@@ -137,7 +134,7 @@ try {
       $filename = explode(".",$_POST['pic']);
 
 
-      if(!imagejpeg($resize, $directory . $filename[0].".jpg")){
+      if(!imagejpeg($resize, $directory . $filename[0].".jpg", 90)){
         throw new Exception("合成圖片失敗");
       }
 
