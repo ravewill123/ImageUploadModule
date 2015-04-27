@@ -42,6 +42,7 @@ try {
   }
 
   $type = strtoupper($_POST['type']);
+  $directory = (isset($_POST['directory']))?  $_POST['directory'] : "tmp/";
 
   switch ($type) {
 
@@ -60,7 +61,7 @@ try {
         throw new Exception("缺少座標參數");
       }
 
-      $img        = $_POST['pic'];
+      $img        = $directory . $_POST['pic'];
       $new_width  = $_POST['cutW'];
       $new_height = $_POST['cutH'];
       $x1         = $_POST['x1'];
@@ -133,16 +134,16 @@ try {
          $cropH  
       );
 
-      $filename = explode(".",$img);
+      $filename = explode(".",$_POST['pic']);
 
 
-      if(!imagejpeg($resize,$filename[0].".jpg")){
+      if(!imagejpeg($resize, $directory . $filename[0].".jpg")){
         throw new Exception("合成圖片失敗");
       }
 
       $code    = 200;
       $message = null;
-      $pic     = $img;
+      $pic     = $directory . $filename[0].".jpg";   
 
       break;
 
@@ -154,8 +155,6 @@ try {
         throw new Exception("請上傳一張圖檔");
       }
 
-
-      $directory = (isset($_POST['directory']))?  $_POST['directory'] : "tmp/";
 
       $file      = $_FILES['picfile'];
 
@@ -194,7 +193,7 @@ try {
       }
 
       $code    = 200;
-      $pic     = $directory . $filename;
+      $pic     = $filename;
       $message = null;
 
       break;

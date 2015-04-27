@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html>
 <head>
 	<meta charset="utf-8">
@@ -44,8 +44,8 @@
 	</style>
 	<script>
 		$(function(){
-            var server = "upload.ashx"; // "ImageUploadModule.php"; API
-            var rootFolder = "../"; // 定義圖檔資料夾的相對路徑
+		    var server = "ImageUploadModule.php"; // "ImageUploadModule.php"; API
+            var uploadFolder = "../tmp/"; // 定義圖檔上傳資料夾的相對路徑
 
             function getSearch(name) {
                 var results = new RegExp('[\\?&]' + name + '=([^&#]*)').exec(window.location.href);
@@ -75,7 +75,8 @@
 				onSubmit: function(file, ext) {
 				  if (ext && /^(jpg|png|jpeg|gif)$/.test(ext)) {
 				    this.setData({
-				      'type': 'upload'
+				        'type': 'upload',
+				        'directory': uploadFolder
 				    });
 				  } else {
                     msg('非圖片類型文件，請重傳');
@@ -89,7 +90,7 @@
                     var obj = $.parseJSON(response.substring(response.indexOf("{"), response.lastIndexOf("}") + 1));
                     if(obj.code == 200){
                         sendData.pic = obj.pic;
-                        $('#canvas').attr('src', rootFolder + obj.pic);
+                        $('#canvas').attr('src', uploadFolder + obj.pic);
                     }else{
                         msg(obj.message);
                     }
@@ -154,6 +155,7 @@
                 $('#save').attr('disabled','disabled');
                 $('#uploadBtn').attr('disabled','disabled');
                 sendData.type = "clip";
+                sendData.directory = uploadFolder;
                 $.post(server, sendData, function(data, textStatus, xhr) {
                     if(data.code == 200){
                         if(call != 0){

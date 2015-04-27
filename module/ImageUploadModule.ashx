@@ -1,4 +1,4 @@
-<%@ WebHandler Language="C#" Class="upload" %>
+﻿<%@ WebHandler Language="C#" Class="upload" %>
 
 using System;
 using System.Web;
@@ -12,6 +12,7 @@ public class upload : IHttpHandler {
     public void ProcessRequest (HttpContext context) {
         string result;
         try {
+            if(context.Request["directory"] != null) relativePath = context.Request["directory"];
             if(context.Request["type"] == "upload"){
                 // 上傳暫存檔案
                 result = uploadImg(context);
@@ -30,7 +31,7 @@ public class upload : IHttpHandler {
 
     // 上傳暫存檔案
     private string uploadImg(HttpContext context) {
-        string absolutePath = context.Server.MapPath("~/" + relativePath);
+        string absolutePath = context.Server.MapPath(relativePath);
         dynamic result;
 
         if (context.Request.Files.Count == 0) {
@@ -74,7 +75,7 @@ public class upload : IHttpHandler {
                     aFile.SaveAs(absolutePath + newName);
                     result = new {
                         code = 200,
-                        pic = relativePath + newName
+                        pic = newName
                     };
                 } else {
                     result = new {
@@ -90,11 +91,11 @@ public class upload : IHttpHandler {
     
     // 裁切暫存檔案
     private string clipImg(HttpContext context) {
-        string absolutePath = context.Server.MapPath("~/" + relativePath);
+        string absolutePath = context.Server.MapPath(relativePath);
         dynamic result;
         if (context.Request["cutW"] != null && context.Request["cutH"] != null && context.Request["x1"] != null && context.Request["y1"] != null && context.Request["w"] != null && context.Request["h"] != null && context.Request["pic"] != null) {
             try {
-                string path = absolutePath + context.Request["pic"].Replace(relativePath, string.Empty);
+                string path = absolutePath + context.Request["pic"];
                 Image sourceImage = Image.FromFile(path);
                 Image cropImage = this.CropImage(
                     sourceImage,
@@ -102,7 +103,7 @@ public class upload : IHttpHandler {
                 );
                 sourceImage.Dispose();
                 Bitmap resizeImage = this.ResizeImage(cropImage, new Size(Convert.ToInt32(context.Request["cutW"]), Convert.ToInt32(context.Request["cutH"])));
-                string pic = context.Request["pic"].Replace(relativePath, string.Empty);
+                string pic = context.Request["pic"];
                 pic = pic.Replace(".jpg", string.Empty);
                 pic = pic.Replace(".png", string.Empty);
                 pic = pic.Replace(".gif", string.Empty);
@@ -111,7 +112,7 @@ public class upload : IHttpHandler {
                 System.IO.File.Delete(path); // 刪除舊上傳檔
                 result = new {
                     code = 200,
-                    pic = relativePath + filePath
+                    pic = filePath
                 };
             } catch (Exception e) {
                 result = new {

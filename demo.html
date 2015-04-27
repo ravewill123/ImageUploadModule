@@ -38,7 +38,7 @@
 	<script>
 		function uploadCallback(pic, parameter){
 			$.fancybox.close();
-			$(parameter).html('<img src="'+pic+'">');
+			$(parameter).html('<img src="tmp/'+pic+'">');
 		}
 		$(function(){
 			$(".upload").fancybox({
@@ -56,34 +56,34 @@
 <body>
 	<div class="container">
 		<div class="row">
-			<a class="upload fancybox.iframe" href="module/upload.html?w=320&h=240&p=%23p1&callback=uploadCallback">
-				<button type="submit" class="btn btn-primary button">
-					<span class="glyphicon glyphicon-open-file" aria-hidden="true"></span>
-					<span>上傳圖片</span>
-				</button>
-			</a>
+            <a class="upload fancybox.iframe" href="module/ImageUploadModule.html?w=320&h=240&p=%23p1&callback=uploadCallback">
+                <button type="submit" class="btn btn-primary button">
+                    <span class="glyphicon glyphicon-open-file" aria-hidden="true"></span>
+                    <span>上傳圖片</span>
+                </button>
+            </a>
 			320 x 240
 			<div id="p1" class="show" style="width: 322px; height: 242px;"></div>
 		</div>
 
 		<div class="row">
-			<a class="upload fancybox.iframe" href="module/upload.html?w=300&h=400&p=%23p2&callback=uploadCallback">
-				<button type="submit" class="btn btn-primary button">
-					<span class="glyphicon glyphicon-open-file" aria-hidden="true"></span>
-					<span>上傳圖片</span>
-				</button>
-			</a>
+            <a class="upload fancybox.iframe" href="module/ImageUploadModule.html?w=300&h=400&p=%23p2&callback=uploadCallback">
+                <button type="submit" class="btn btn-primary button">
+                    <span class="glyphicon glyphicon-open-file" aria-hidden="true"></span>
+                    <span>上傳圖片</span>
+                </button>
+            </a>
 			300 x 400
 			<div id="p2" class="show" style="width: 302px; height: 402px;"></div>
 		</div>
 
 		<div class="row">
-			<a class="upload fancybox.iframe" href="module/upload.html?w=400&h=100&p=%23p3&callback=uploadCallback">
-				<button type="submit" class="btn btn-primary button">
-					<span class="glyphicon glyphicon-open-file" aria-hidden="true"></span>
-					<span>上傳圖片</span>
-				</button>
-			</a>
+            <a class="upload fancybox.iframe" href="module/ImageUploadModule.html?w=400&h=100&p=%23p3&callback=uploadCallback">
+                <button type="submit" class="btn btn-primary button">
+                    <span class="glyphicon glyphicon-open-file" aria-hidden="true"></span>
+                    <span>上傳圖片</span>
+                </button>
+            </a>
 			<div id="p3" class="show" style="width: 402px; height: 102px;"></div>
 		</div>
 
