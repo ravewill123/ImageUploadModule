@@ -140,7 +140,7 @@ try {
 
       $code    = 200;
       $message = null;
-      $pic     = $directory . $filename[0].".jpg";   
+      $pic     = $filename[0].".jpg";   
 
       break;
 
