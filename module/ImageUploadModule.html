@@ -8,7 +8,7 @@
 	<link rel="stylesheet" type="text/css" href="css/imgareaselect-default.css" />
 	<link rel="stylesheet" type="text/css" href="css/bootstrap.min.css" />
 	<script type="text/javascript" src="js/vendor/jquery-1.11.2.min.js"></script>
-    <script type="text/javascript" src="js/vendor/ajaxupload.3.5.js"></script>
+    <script type="text/javascript" src="js/vendor/jquery.form.min.js"></script>
 	<script type="text/javascript" src="js/vendor/jquery.imgareaselect.pack.js"></script>
 	<script type="text/javascript" src="js/vendor/bootstrap.min.js"></script>
 	<style type="text/css">
@@ -41,6 +41,13 @@
             width:300px;
             margin: auto;
         }
+        .upload {
+            opacity: 0;
+            filter:alpha(opacity=0);
+            margin: -44px 425px;
+            position: absolute;
+            z-index: 10;
+        }
 	</style>
 	<script>
 		$(function(){
@@ -68,35 +75,52 @@
             }
             sendData.cutW = cutWidth;
             sendData.cutH = cutHeight;
-			var ajaxUpload = new AjaxUpload( $('#uploadBtn'), 
-            {
-				action: server,
-				name: 'picfile',
-				onSubmit: function(file, ext) {
-				  if (ext && /^(jpg|png|jpeg|gif)$/.test(ext)) {
-				    this.setData({
-				        'type': 'upload',
-				        'directory': uploadFolder
-				    });
-				  } else {
-                    msg('非圖片類型文件，請重傳');
-				    return false;
-				  }
-                  $('#uploadBtn').find('span:eq(1)').html('上傳中...');
-				  this.disable();
-				},
-				onComplete: function(file, response) {
-                    this.enable();
-                    var obj = $.parseJSON(response.substring(response.indexOf("{"), response.lastIndexOf("}") + 1));
-                    if(obj.code == 200){
-                        sendData.pic = obj.pic;
-                        $('#canvas').attr('src', uploadFolder + obj.pic);
-                    }else{
-                        msg(obj.message);
+            $('#uploadForm').attr('action', server).ajaxForm({
+                beforeSerialize: function(){
+                    if($('input[name="picfile"]').val() == "") return false;
+                },
+                dataType: 'json',
+                beforeSend: function() {
+                    $('#uploadBtn').attr('disabled','disabled');
+                    $('#uploadBtn').find('span:eq(1)').html('上傳中...');
+                },
+                uploadProgress: function(event, position, total, percentComplete) {
+                    $('#uploadBtn').find('span:eq(1)').html('上傳'+percentComplete+'%');
+                },
+                success: function(obj) {
+                    uploadHandler(obj);
+                },
+                error: function(xhr) {
+                    var obj;
+                    try{
+                        // IE 8
+                        obj = $.parseJSON(xhr.responseText.substring(xhr.responseText.indexOf("{"), xhr.responseText.lastIndexOf("}") + 1));
+                        uploadHandler(obj);
+                    }catch(e){
+                        $('#uploadBtn').removeAttr('disabled').find('span:eq(1)').html('上傳圖片');
+                        msg("上傳失敗");
                     }
-                    $('#uploadBtn').find('span:eq(1)').html('上傳圖片');
-				}
-			});
+                }
+            }).find('input[name="directory"]').val(uploadFolder);
+            $('input[name="picfile"]').change(function(){
+                var ext = $(this).val();
+                if(ext != ''){
+                    if (/\.(jpg|png|jpeg|gif)$/i.test(ext)) {
+                        $('#uploadForm').submit();
+                    }else{
+                        msg('非圖片類型文件，請重傳');
+                    }
+                }
+            });
+			function uploadHandler(obj){
+                if(obj.code == 200){
+                    sendData.pic = obj.pic;
+                    $('#canvas').attr('src', uploadFolder + obj.pic);
+                }else{
+                    msg(obj.message);
+                    $('#uploadBtn').removeAttr('disabled').find('span:eq(1)').html('上傳圖片');
+                }
+            }
             $('#canvas').load(function() {
                 $(this).removeAttr('style');
                 sourceWidth = $(this).width();
@@ -125,6 +149,7 @@
                 setting.y2 = setting.y1 + setting.h;
                 $(this).imgAreaSelect({ x1: setting.x1, y1: setting.y1, x2: setting.x2, y2: setting.y2, aspectRatio: cutWidth+':'+cutHeight, handles: true, onSelectEnd: clipImgEvent, minWidth:min, minHeight:min });
                 clipImgEvent(null, $(this).data('imgAreaSelect').getSelection());
+                $('#uploadBtn').removeAttr('disabled').find('span:eq(1)').html('上傳圖片');
             });
             function clipImgEvent(img, selection){
                 sendData.x1 = Math.round(selection.x1 / scale);
@@ -151,7 +176,6 @@
                 event.preventDefault();
                 if($(this).data('send')) return;
                 $(this).data('send', true);
-                ajaxUpload.disable();
                 $('#save').attr('disabled','disabled');
                 $('#uploadBtn').attr('disabled','disabled');
                 sendData.type = "clip";
@@ -167,7 +191,6 @@
                         msg(data.message);
                         $('#save').data('send', false);
                         $('#uploadBtn').removeAttr('disabled');
-                        ajaxUpload.enable();
                         $('#save').removeAttr('disabled');
                     }
                 }, 'json').fail(function() {
@@ -185,10 +208,16 @@
 		
 		<div class="draw"><img id="canvas" style="display: none"></div>
 		<div class="row">
-			<button type="submit" class="btn btn-primary button" id="uploadBtn">
-				<span class="glyphicon glyphicon-open-file" aria-hidden="true"></span>
-				<span>上傳圖片</span>
-			</button>
+            <form id="uploadForm" action="" method="post" enctype="multipart/form-data">
+                <a type="submit" class="btn btn-primary button" id="uploadBtn">
+                    <span class="glyphicon glyphicon-open-file" aria-hidden="true"></span>
+                    <span>上傳圖片</span>
+                </a>
+                <input type="file" name="picfile" class="btn btn-primary button upload" accept='image/*' >
+                <input type="hidden" name="type" value="upload">
+                <input type="hidden" name="directory" value="">
+            </form>
+			
 			<button type="submit" class="btn btn-primary button" id="save" disabled="disabled">
 				<span class="glyphicon glyphicon-floppy-disk" aria-hidden="true"></span>
 				<span>儲存裁切</span>
