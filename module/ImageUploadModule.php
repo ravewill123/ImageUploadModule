@@ -100,7 +100,7 @@ try {
       // Create Crop Image 
       $crop = imagecreatetruecolor($cropW, $cropH);  
 
-      if($img_type === "png"){
+      if($img_type === "png" || $img_type === "gif"){
         $bg = imagecolorallocate($crop, 255, 255, 255);
         imagefill($crop, 0, 0, $bg);
       }
